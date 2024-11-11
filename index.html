@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affinity Diagram</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="intro-modal" id="introModal">
+        <img id="popupImg" src="./images/popup1.png" width="600px" height="640px" alt="Introduction Image">
+        <div class="intro-content">
+            <div class="cancel">
+            <svg id="cancel" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M19.1924 0.806641L0.807607 19.1914" stroke="#787878" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M19.1924 19.1914L0.807607 0.806631" stroke="#787878" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="step" id="step">[Step 1]</span>
+            <h1 id="h1"><br/>어피니티 다이어그램을<br/>진행할 노트를 입력해보세요.</h1>
+            <p id="p">노트에 들어갈 내용들은 문장으로 작성하되, <br/>
+                엔터키로 문장들을 구분해주세요.      <br/><br/> 
+                또는 엑셀 파일을 업로드하여 노트들을 생성할 수 있습니다.</p>
+             
+                <div class="carousel-btn">
+                    <button id="prev-btn" disabled>이전</button>
+                    <div class="carousel-indicators" id="indicators">
+                        <span class="indicator active"></span>
+                        <span class="indicator"></span>
+                        <span class="indicator"></span>
+                        <span class="indicator"></span>
+                        <span class="indicator"></span>
+                    </div>
+                    <button id="next-btn">다음</button>
+                </div>
+        </div>
+    </div>
+    
+  
+    <div id="input-apikey">
+        <div class="start-input-apikey">
+            <label for="apikey-input"><h2>API Key를 입력하세요</h2></label>
+            <input type="text" id="apikey-input" placeholder="API Key 입력" />
+            <button onclick="updateApiKey()">설정</button>
+        </div>
+    </div>
+    
+    
+    <Header>
+        <button id="home"><img src="./images/logo2.png" alt="" width="380px"></button>
+        <!--<input type="text" contenteditable="true" id="fileTitle" placeholder="|  Affinity Diagram">-->
+    </div>
+    <div class="userContainer">
+        <button id="changeApikey">apikey 교체</button>
+        <div id="apikeyModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>API Key 변경</h2>
+                <label for="apikey-input">새로운 API Key를 입력하세요:</label>
+                <div class="apikey-input-flex">
+                    <input class="input-button-modal" type="text" id="apikey-input" placeholder="API Key 입력" />
+                    <button onclick="updateApiKey()">설정</button>
+                </div>
+            </div>
+        </div>
+        <button id="export-btn">Export <img src="./images/Icon/allow.png" class="export-btn" width="20px"></button>
+
+    </Header>
+
+    <Sidebar>
+        <button id="group">
+            <img src="./images/Icon/grouping.png" alt="" width="24px">
+            <span class="sidebar-label">그룹짓기</span>
+        </button>
+        <button id="dataCleanup">
+            <img src="./images/Icon/removeDuplicates.png" alt="" width="24px">
+            <span class="sidebar-label">중복제거</span>
+        </button>
+        <button id="insight">
+            <img src="./images/Icon/insight.png" alt="" width="24px">
+            <span class="sidebar-label">인사이트</span>
+        </button>
+        <button id="headerExtraction">
+            <img src="./images/Icon/topHeader.png" alt="" width="24px">
+            <span class="sidebar-label">2차헤더</span>
+        </button>
+    </Sidebar>
+    
+    
+
+    <div class="floatBtn">
+        <!-- <input type="text" id="noteInput" placeholder="내용을 입력하세요."> -->
+        <textarea id="noteInput" placeholder="내용을 입력하세요."></textarea>
+       
+        <input type="file" id="fileInput" accept=".xlsx, .xls"/>
+        <button class="input-button" id="uploadButton"><img src="./images/Icon/fileinput.png" alt="" width="32px"></button>
+    
+        <button class="input-button" id="noteAdd"><img src="./images/Icon/textinput.png" alt="" width="32px"></button>
+    </div>
+
+    
+    <div class="floatBtn2">
+        <button id="colortoggle"></button>
+        <div class="colorContainer">
+            <button id="c1" class="color-btn"></button>
+            <button id="c2" class="color-btn"></button>
+            <button id="c3" class="color-btn"></button>
+            <button id="c4" class="color-btn"></button>
+            <button id="c5" class="color-btn"></button>
+        </div>
+    
+        <button id="fontSize">14</button>
+        <div id="fontSizeDropdown" class="dropdown">
+            <div class="FS f1" data-size="10px">10</div>
+            <div class="FS f2" data-size="12px">12</div>
+            <div class="FS f3 chosen" data-size="14px">14</div>
+            <div class="FS f4" data-size="16px">16</div>
+            <div class="FS f5" data-size="18px">18</div>
+        </div>
+    
+        <button id="fontWeight">B</button>
+        
+    </div>
+
+    <div class="floatBtn3">
+        <button id="groupingNote">
+            <img class="no-click" src="./images/Icon/groupingWhite.svg" alt="" width="36px">
+            <span class="btn-text">그룹짓기</span>
+        </button>
+        <button id="headerNote">
+            <img class="no-click" src="./images/Icon/topHeaderWhite.svg" alt="" width="36px">
+            <span class="btn-text">헤더만들기</span>
+        </button>
+        <button id="deleteNote">
+            <img class="no-click" src="./images/Icon/deleteWhite.svg" alt="" width="36px">
+            <span class="btn-text">노트지우기</span>
+        </button>
+    </div>
+    
+    <div id="notes"></div>
+    <div id="groups"></div>
+    
+    <div class="loading-container">
+        <div class="spinner"></div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
