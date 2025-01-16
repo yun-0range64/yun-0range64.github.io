@@ -46,7 +46,7 @@
     <div id="input-apikey">
         <div class="start-input-apikey">
             <label for="apikey-input"><h2>API Key를 입력하세요</h2></label>
-            <input type="text" id="apikey-input" placeholder="API Key 입력" />
+            <input type="text" class="apikey-input" placeholder="API Key 입력" />
             <button onclick="updateApiKey()">설정</button>
         </div>
     </div>
@@ -55,21 +55,21 @@
     <Header>
         <button id="home"><img src="./images/logo2.png" alt="" width="380px"></button>
         <!--<input type="text" contenteditable="true" id="fileTitle" placeholder="|  Affinity Diagram">-->
-    </div>
-    <div class="userContainer">
-        <button id="changeApikey">apikey 교체</button>
         <div id="apikeyModal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
                 <h2>API Key 변경</h2>
                 <label for="apikey-input">새로운 API Key를 입력하세요:</label>
                 <div class="apikey-input-flex">
-                    <input class="input-button-modal" type="text" id="apikey-input" placeholder="API Key 입력" />
+                    <input class="input-button-modal apikey-input" type="text" placeholder="API Key 입력" />
                     <button onclick="updateApiKey()">설정</button>
                 </div>
             </div>
         </div>
-        <button id="export-btn">Export <img src="./images/Icon/allow.png" class="export-btn" width="20px"></button>
+        <div class="header-btn">
+            <button id="changeApikey">API Key 교체</button>
+            <button id="export-btn">Export <img src="./images/Icon/allow.png" class="export-btn" width="20px"></button>
+        </div>
 
     </Header>
 
@@ -91,58 +91,41 @@
             <span class="sidebar-label">2차헤더</span>
         </button>
     </Sidebar>
-    
-    
 
     <div class="floatBtn">
-        <!-- <input type="text" id="noteInput" placeholder="내용을 입력하세요."> -->
-        <textarea id="noteInput" placeholder="내용을 입력하세요."></textarea>
-       
+        <textarea id="noteInput" placeholder="내용을 입력하세요."></textarea>       
         <input type="file" id="fileInput" accept=".xlsx, .xls"/>
         <button class="input-button" id="uploadButton"><img src="./images/Icon/fileinput.png" alt="" width="32px"></button>
-    
         <button class="input-button" id="noteAdd"><img src="./images/Icon/textinput.png" alt="" width="32px"></button>
     </div>
-
     
     <div class="floatBtn2">
-        <button id="colortoggle"></button>
-        <div class="colorContainer">
-            <button id="c1" class="color-btn"></button>
-            <button id="c2" class="color-btn"></button>
-            <button id="c3" class="color-btn"></button>
-            <button id="c4" class="color-btn"></button>
-            <button id="c5" class="color-btn"></button>
-        </div>
-    
-        <button id="fontSize">14</button>
-        <div id="fontSizeDropdown" class="dropdown">
-            <div class="FS f1" data-size="10px">10</div>
-            <div class="FS f2" data-size="12px">12</div>
-            <div class="FS f3 chosen" data-size="14px">14</div>
-            <div class="FS f4" data-size="16px">16</div>
-            <div class="FS f5" data-size="18px">18</div>
-        </div>
-    
-        <button id="fontWeight">B</button>
+        <button id="similarityBtn">유사도 확인</button>    
+        <div class="floatBtn2Container">
+            <button id="colortoggle"></button>
+            <div class="colorContainer">
+                <button id="c1" class="color-btn"></button>
+                <button id="c2" class="color-btn"></button>
+                <button id="c3" class="color-btn"></button>
+                <button id="c4" class="color-btn"></button>
+                <button id="c5" class="color-btn"></button>
+            </div>
         
-    </div>
-
-    <div class="floatBtn3">
-        <button id="groupingNote">
-            <img class="no-click" src="./images/Icon/groupingWhite.svg" alt="" width="36px">
-            <span class="btn-text">그룹짓기</span>
-        </button>
-        <button id="headerNote">
-            <img class="no-click" src="./images/Icon/topHeaderWhite.svg" alt="" width="36px">
-            <span class="btn-text">헤더만들기</span>
-        </button>
-        <button id="deleteNote">
-            <img class="no-click" src="./images/Icon/deleteWhite.svg" alt="" width="36px">
-            <span class="btn-text">노트지우기</span>
-        </button>
+            <button id="fontSize">14</button>
+            <div id="fontSizeDropdown" class="dropdown">
+                <div class="FS f1" data-size="10px">10</div>
+                <div class="FS f2" data-size="12px">12</div>
+                <div class="FS f3 chosen" data-size="14px">14</div>
+                <div class="FS f4" data-size="16px">16</div>
+                <div class="FS f5" data-size="18px">18</div>
+            </div>
+        
+            <button id="fontWeight">B</button>    
+        </div>
     </div>
     
+    <button id="similarityBtn2">유사도 확인</button>    
+
     <div id="notes"></div>
     <div id="groups"></div>
     

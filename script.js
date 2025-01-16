@@ -1,27 +1,29 @@
+//API 설정 ------------------------------------------------------------------------------------------------------------------------------
+
 let apiKey = "";
 const chatEndpoint = "https://api.openai.com/v1/chat/completions";
 const embeddingsEndpoint = "https://api.openai.com/v1/embeddings";
+
 console.log(apiKey)
 
 let notes = [];
 let groups = [];
 let selectedNote = null;
+let selectedGroup = null;
+
 let isSelecting = false;
 let selectionStartX, selectionStartY;
 let $selectionBox;
 
 
 
-// 로딩 스피너를 보여주는 함수
-function showLoadingSpinner() {
-    document.querySelector('.loading-container').style.display = 'flex';
-}
-// 로딩 스피너를 숨기는 함수
-function hideLoadingSpinner() {
-    document.querySelector('.loading-container').style.display = 'none';
-}
-// callGPT([질문], [콜백 함수])
+// 로딩 스피너 ------------------------------------------------------------------------------------------------------------------------------
+const toggleLoadingSpinner = (show) => {
+    $('.loading-container').css('display', show ? 'flex' : 'none');
+};
+// callGPT([질문], [콜백 함수]) --------------------------------------------------------------------------------------------------------------
 function callGPT(prompt, callback) {
+    toggleLoadingSpinner(true);
     $.ajax({
         url: chatEndpoint,
         method: 'POST',
@@ -37,17 +39,19 @@ function callGPT(prompt, callback) {
             }]
         }),
         success: function(data) {
-            hideLoadingSpinner();
+            toggleLoadingSpinner(false);
             if (callback) callback(data.choices[0].message.content);
         },
         error: function() {
-            hideLoadingSpinner();
+            toggleLoadingSpinner(false);
             alert("Error occurred while calling GPT");
         }
     });
 }
 
-// 버튼을 클릭했을 때 노트를 추가하는 이벤트 핸들러
+
+
+// 버튼을 클릭했을 때 노트를 추가 --------------------------------------------------------------------------------------------------------------
 $('#noteAdd').on('click', function() {
     let message = $('#noteInput').val();
     let messages = message.split('\n');
@@ -62,7 +66,22 @@ $('#noteAdd').on('click', function() {
 
     $('#noteInput').val('');
 });
-// 노트를 화면에 추가하는 함수
+// 노트 클릭 이벤트 --------------------------------------------------------------------------------------------------------------
+$('#notes, #groups').on('click', '.note', function(event) {
+    event.stopPropagation(); // 이벤트 전파 중지
+    selectedNote = $(this);
+    const floatBtn2 = $('.floatBtn2');
+    // floatBtn2 클래스 설정 'beforeGroup' or 'afterGroup' > 유사도 검사 시 그룹핑 상태 참고를 위해
+    const isGroup = $(this).closest('#groups').length > 0;
+    floatBtn2.removeClass('beforeGroup afterGroup');
+    floatBtn2.addClass(isGroup ? 'afterGroup' : 'beforeGroup');
+    floatBtn2.css({
+        display: 'flex',
+        top: event.pageY - floatBtn2.outerHeight() - 10 + 'px',
+        left: event.pageX - (floatBtn2.outerWidth() / 2) + 'px'
+    });
+});
+// 노트를 화면에 추가하는 함수 --------------------------------------------------------------------------------------------------------------
 let noteIndex = 0;
 function addNoteToDisplay(note) {
     noteIndex++;
@@ -70,120 +89,82 @@ function addNoteToDisplay(note) {
         .addClass('note')
         .attr('id', 'note-' + `${noteIndex}`)
         .text(note.text)
-        .attr('contenteditable', 'true') // 노트 수정 가능
-        .css('background-color', note.color || '') // 노트의 색상 설정
-        .dblclick(function() {
-            applySimilarityColors(note);
-        })
-        .click(function(event) {
-            event.stopPropagation(); // 이벤트 전파 중지
-            // 선택된 노트 저장
-            selectedNote = $(this);
-            $('.note').removeClass('selected');
-            $(this).addClass('selected');
-
-            // floatBtn2 표시
-            const floatBtn2 = $('.floatBtn2');
-            floatBtn2.css({
-                display: 'flex',
-                top: event.pageY - floatBtn2.outerHeight() - 10 + 'px',
-                left: event.pageX - (floatBtn2.outerWidth() / 2) + 'px'
-            });
-            updateFontSizeButton();
-        });
-    // 노트가 노란색이라면 z-index를 1000으로 설정
-    if (note.color === 'yellow' || note.color === '#FFFF00') {
-        $noteElement.css('z-index', 10000);
-    }
+        .attr('contenteditable', 'true')
     $('#notes').append($noteElement);
 
-    // 노트를 화면 중앙에 배치
-    const notesContainerWidth = $('#notes').width();
+    // 노트를 화면 전체에 랜덤하게 배치
+    const windowWidth = $(window).width();
+    const windowHeight = $(window).height();
     const noteWidth = $noteElement.outerWidth();
-    const leftPosition = (notesContainerWidth / 2) - (noteWidth / 2);
-    $noteElement.css('left', leftPosition + 'px');
+    const noteHeight = $noteElement.outerHeight();
+    const headerHeight = 64; // 헤더 높이
+
+    const randomLeft = (Math.random() * windowWidth) - noteWidth;
+    const randomTop = (Math.random() * (windowHeight - noteHeight - headerHeight)) + headerHeight;
+
+    $noteElement.css({
+        left: randomLeft + 'px',
+        top: randomTop + 'px'
+    });
 
     // 드래그 가능하게 설정
     makeNoteDraggable($noteElement);
 }
 
-//그룹핑 후 클러스터링
-$('#groups').on('dblclick', '.note', function() {
-    console.log('노트더블클릭')
-    let noteContent = $(this).text();
-    applySimilarityColors2(noteContent);
+
+
+//유사도 측정 기능 ------------------------------------------------------------------------------------------------------------------------------
+//유사도 검사 버튼 클릭 ------------------------------------------------------------------------------------------------------------------------------
+$('#similarityBtn').click(function () {
+    if (selectedNote) {
+        const noteData = selectedNote.text();
+        const targetClass = $('.floatBtn2').hasClass('beforeGroup') ? 'note' : 'groupnote';
+        applySimilarityColors(noteData, targetClass);
+    } else {
+        alert('노트를 선택하세요!');
+    }
 });
-
-//그룹별 클러스터링
-$('#groups').on('dblclick', '.group-title', function() {
-    console.log('헤더더블클릭')
-    let noteContent = $(this).text(); // 클릭된 .note의 내용을 가져옵니다.
-    applySimilarityColors3(noteContent);
-});
-
-
-//프랑켄슈타인
-function applySimilarityColors(selectedNote) {
+// 공통된 유사도 계산 및 색상 적용 함수
+function applySimilarityColors(selectedNote, targetClass) {
     const texts = notes.map(note => note.text);
-    getSimilarities(selectedNote.text, texts).then(similarities => {
-        similarities.forEach((similarity, index) => {
-            const intensity = Math.floor((1 - similarity) * 255);
-            const color = `rgb(255, 255, ${intensity})`;
-            $('#note-' + notes[index].id).css('background-color', color);
-        });
-    });
-}
-
-//그룹핑 후 프랑켄슈타인
-function applySimilarityColors2(selectedNote) {
-    const texts = notes.map(note => note.text);
-
     getSimilarities(selectedNote, texts).then(similarities => {
         similarities.forEach((similarity, index) => {
             const intensity = Math.floor((1 - similarity) * 255);
             const color = `rgb(255, 255, ${intensity})`;
-            $('#groupnote-' + notes[index].id).css('background-color', color);
+            $(`#${targetClass}-${notes[index].id}`).css('background-color', color);
         });
     });
 }
-
-//그룹별 프랑켄슈타인
-function applySimilarityColors3(selectedNote) {
+//그룹간 유사도 검사 버튼 클릭
+$('#groups').on('click', '.group-title', function(event) {
+    $('#similarityBtn2').css({
+        display: 'flex',
+        top: event.pageY - $('#similarityBtn2').outerHeight() - 10 + 'px',
+        left: event.pageX - ($('#similarityBtn2').outerWidth() / 2) + 'px'
+    });
+    selectedGroup = $(this).text();
+});
+$('#similarityBtn2').click(function(){
+    applySimilarityColors2(selectedGroup);
+    $('#similarityBtn2').hide();
+})
+//그룹간 유사도 측정
+function applySimilarityColors2(selectedNote) {
     const groupTitles = document.querySelectorAll('.group-title');
     const texts = Array.from(groupTitles).map(title => title.textContent);
-    console.log("Texts for similarity check:", texts);
 
     getSimilarities(selectedNote, texts).then(similarities => {
-        console.log("Calculated similarities:", similarities);
-
         similarities.forEach((similarity, index) => {
             const intensity = Math.floor((1 - similarity) * 255);
-            const color = `rgb(255, ${intensity}, ${intensity})`;
-            console.log(`Setting color for group title ${index + 1}:`, color);
+            const color = `rgb(${intensity}, ${intensity}, 255)`;            
 
-            // group-title 요소에 유사도를 data-similarity 속성에 저장하고 배경색 및 유사도를 표시
             const groupTitleElement = document.querySelector(`#titlenote-${index + 1}`);
             groupTitleElement.style.backgroundColor = color;
-            groupTitleElement.setAttribute('data-similarity', similarity.toFixed(2)); // 메타데이터로 유사도 저장
-
-            // 유사도 값을 group-title에도 표시
-            const similarityText = `유사도: ${similarity.toFixed(2)}`;
-            let similarityElement = groupTitleElement.querySelector('.similarity-text');
-
-            if (!similarityElement) {
-                // 유사도 텍스트를 표시할 요소가 없으면 생성
-                similarityElement = document.createElement('span');
-                similarityElement.classList.add('similarity-text');
-                groupTitleElement.appendChild(similarityElement);
-            }
-
-            similarityElement.textContent = similarityText; // 유사도 텍스트 업데이트
+            groupTitleElement.style.color = '#fff';
         });
     });
 }
-
-
-//프랑켄슈타인 공통(본체)
+//유사도 측정 공통
 async function getSimilarities(selectedText, texts) {
     const response = await fetch(embeddingsEndpoint, {
         method: 'POST',
@@ -196,9 +177,7 @@ async function getSimilarities(selectedText, texts) {
             input: texts
         })
     });
-
     const data = await response.json();
-
     const embeddings = data.data.map(item => item.embedding);
 
     const selectedIndex = texts.indexOf(selectedText);
@@ -209,9 +188,10 @@ async function getSimilarities(selectedText, texts) {
         return cosineSimilarity(selectedEmbedding, embedding);
     });
 
+    console.log(similarities)//이거 왜이리 많이 출력되는지 확인 필요 > 토큰 낭비
+
     return similarities;
 }
-
 function cosineSimilarity(vecA, vecB) {
     const dotProduct = vecA.reduce((acc, val, i) => acc + val * vecB[i], 0);
     const magnitudeA = Math.sqrt(vecA.reduce((acc, val) => acc + val * val, 0));
@@ -220,104 +200,49 @@ function cosineSimilarity(vecA, vecB) {
 }
 
 
-// 그룹핑 함수
-function groupNotes() {
-    console.log("Step 1: Fetching notes and assigning IDs...");
 
-    // 각 노트의 고유 ID와 텍스트를 가져옴
-    const notesWithId = notes.map((note, index) => {
-        const noteId = index + 1;
-        const noteText = note.text;
-        console.log(`Note ID: ${noteId}, Text: ${noteText}`);
-        return { id: noteId, text: noteText };
-    });
+// AID 기능 1 - 그룹핑 -----------------------------------------------------------------------------------------------------------------------
+$('#group').on('click', function() {
+    if (notes.length >= 5) {
+        // 각 노트의 고유 ID와 텍스트를 가져옴
+        const notesWithId = notes.map((note, index) => {
+            const noteId = index + 1;
+            const noteText = note.text;
+            console.log(`Note ID: ${noteId}, Text: ${noteText}`);
+            return { id: noteId, text: noteText };
+        });
+        const notesText = notesWithId.map(note => `ID: ${note.id}, 내용: ${note.text}`).join("\n");
 
-    // notesWithId 배열을 기반으로 텍스트를 결합
-    console.log("Step 2: Combining notes into notesText...");
-    const notesText = notesWithId.map(note => `ID: ${note.id}, 내용: ${note.text}`).join("\n");
-    console.log(`Generated notesText: \n${notesText}`);
+        // 프롬프트
+        const prompt = 
+        `You are a UX/UI designer.
+        If the core content of the notes is similar, they are considered related.
+        An affinity diagram is a grouping technique used to find meaningful patterns within large amounts of data.
+        Group similar notes into an affinity diagram based on the following notes: ${notesText}.
+        Each note has a unique ID, and you must include both the ID and the content of every note.
+        **You must ensure that all notes are included in a group. No note should be left out.**
+        Respond in Korean and follow the output format below:
+        - 그룹 이름:
+        - ID:, 내용:`;
 
-    // 프롬프트 생성
-    console.log("Step 3: Creating the prompt with notesText...");
-    const prompt = 
-    `You are a UX/UI designer.
-    If the core content of the notes is similar, they are considered related.
-    An affinity diagram is a grouping technique used to find meaningful patterns within large amounts of data.
-    Group similar notes into an affinity diagram based on the following notes: ${notesText}.
-    Each note has a unique ID, and you must include both the ID and the content of every note.
-    **You must ensure that all notes are included in a group. No note should be left out.**
-    Respond in Korean and follow the output format below:
-    - 그룹이름:
-      - ID:, 내용:`;
-
-    // 최종 프롬프트 출력
-    console.log("Step 4: Final prompt:");
-    console.log(prompt);
-
-    // API 호출 및 결과 처리
-    console.log("Step 5: Calling GPT API...");
-    callGPT(prompt, (response) => {
-        console.log("Step 6: Response from GPT:");
-        console.log(response);
-        $('#groups').empty();
-        $('#notes').empty();
-        addGroupToDisplay(response);
-    });
-    
-}
-
-
-// 선택된 노트들로 그룹핑 수행
-$('#groupingNote').on('click', function() {
-    const selectedNotes = $('.note.selected').map(function() {
-
-        return $(this).text();
-    }).get();
-
-    if (selectedNotes.length >= 2) {
-        groupSelectedNotes(selectedNotes);
-        showLoadingSpinner();
+        callGPT(prompt, (response) => {
+            console.log(response);
+            $('#groups').empty();
+            $('#notes').empty();
+            addGroupToDisplay(response);
+        });
     } else {
-        alert("두 개 이상의 노트를 선택해주세요.");
+        alert("노트를 5개 이상 입력하세요.");
     }
 });
-
-function groupSelectedNotes(selectedNotes) {
-    const notesText = selectedNotes.join("\n");
-
-    const prompt =
-    `너는 UX/UI 디자이너야.
-    노트의 핵심 내용이 비슷하면 유사한 노트이다.
-    affinity diagram은 방대한 데이터들 사이에서 의미 있는 규칙을 발견하기 위한 그룹핑 기법이다.
-    유사한 노트를 하나의 그룹으로 묶어 ${notesText}에 대한 affinity diagram을 제작한다.
-    기존에 있는 내용을 누락하지 않는다.
-    출력형식에 맞춰 답변을 출력한다.
-    출력형식: - 그룹이름: - 그룹내용: - 그룹내용: - 그룹이름: - 그룹내용: - 그룹내용: - 그룹내용:`;
-
-    callGPT(prompt, (response) => {
-        console.log(response); 
-
-        $('#groups').empty(); // 기존 그룹 초기화
-        addGroupToDisplay(response); // 선택된 노트로 그룹 생성
-        
-        // #notes 안에서 selectedNotes 제거
-        selectedNotes.forEach(note => {
-            $('#notes').children().filter(function() {
-                return $(this).text() === note;
-            }).remove();
-        });
-    });
-}
-
 let globalNoteId = 1;
-
 function addGroupToDisplay(response) {
     let groupTitleId = 1;  // 그룹 타이틀 ID 초기화
 
     // GPT의 응답을 그룹 이름과 내용으로 분리
     try {
         // 'Group' 키워드를 기준으로 그룹을 분리
-        const groups = response.split('- 그룹이름:').slice(1);
+        const groups = response.split('- 그룹 이름:').slice(1);
         if (groups.length === 0) {
             console.error("No valid groups found in the GPT response.");
             return;
@@ -370,17 +295,12 @@ function addGroupToDisplay(response) {
     }
 }
 
-
-// GPT 상위 헤더 추출
+// AID 기능 2 - 상위 헤더 추출 -----------------------------------------------------------------------------------------------------------------------
 $('#headerExtraction').on('click', function() {
-    showLoadingSpinner();
     let groupNotes = '';
     $('.group-container').each(function() {
         let title = $(this).find('.group-title').text();
-        let notes = $(this).find('.note').map(function() {
-            return $(this).text();
-        }).get().join(' ');
-        groupNotes += '그룹이름: ' + title + ' 그룹내용: ' + notes;
+        groupNotes += '그룹이름: ' + title ;
     });
 
     const prompt =
@@ -389,6 +309,8 @@ $('#headerExtraction').on('click', function() {
     각 그룹의 이름과 내용을 바탕으로 관련 있는 그룹을 묶어 상위 헤더 이름을 정하고 그 아래에 그룹들을 나열한다.
     상위 헤더 이름은 그룹의 공통점을 알 수 있게 짓는다.
     그룹을 중복되게 묶지 않는다.
+    그룹 내용이 아닌 그룹 이름을 정확히 입력한다.
+    출력된 답변을 파싱하여 사용할 것이기 때문에 앞서 사용한 그룹 이름을 정확히 입력한다.
 
     출력형식에 맞춰 답변을 출력한다.
     출력 형식: 
@@ -401,13 +323,13 @@ $('#headerExtraction').on('click', function() {
 
     다음은 그룹핑 결과야: ${groupNotes}`;
 
+    console.log(groupNotes)
+
     callGPT(prompt, function(response) {
         console.log(response);
         addHeaderToDisplay(response);
     });
 });
-
-// GPT 상위 헤더 추출 - 파싱 후 화면에 추가
 function addHeaderToDisplay(response) {
     let $existingGroups = $('.group-container').clone();
 
@@ -443,27 +365,39 @@ function addHeaderToDisplay(response) {
     }
 }
 
-// 노트 정리 버튼을 클릭했을 때 중복 노트를 찾아 회색으로 변경하는 함수
+// AID 기능 3 - 중복 노트 정리 -----------------------------------------------------------------------------------------------------------------------
 $('#dataCleanup').on('click', function() {
-    const notesText = notes.join("\n");
-    showLoadingSpinner();
-
+    const notesWithId = notes.map((note, index) => {
+        const noteId = index + 1;
+        const noteText = note.text;
+        console.log(`Note ID: ${noteId}, Text: ${noteText}`);
+        return { id: noteId, text: noteText };
+    });
+    const notesText = notesWithId.map(note => `ID: ${note.id}, 내용: ${note.text}`).join("\n");
+    
     const prompt =
     `너는 UX/UI 디자이너야.
     노트의 핵심 내용이 일치하면 유사한 노트이다.
-    예를 들어, '너무 무거워서 불편하다'와 '많이 무겁다'는 유사한 노트로  간주한다.
-    노트 데이터 중에서 유사한 노트를 찾는다.
-    찾는 유사한 노트 중 첫 번째 노트를 제외하고 나머지 노트의 인덱스를 반환한다. 
-    유사한 노트를 찾고 인덱스를 반환한다.
-    출력형식에 맞춰 답변을 출력한다.
-    노트 데이터: ${notes.map((note, index) => `${index + 1}. ${note}`).join("\n")}
-    출력 형식: [중복된 노트의 인덱스들]`;
+    예를 들어, '너무 무거워서 불편하다'와 '많이 무겁다'는 유사한 노트로 간주한다.
+    노트 데이터 중에서 유사한 노트를 찾아 그룹화한다.
+    각 그룹은 중복된 노트의 인덱스를 포함하며, 형식은 다음과 같다.
+    형식: [[1,3], [2,4,5]]
+    노트 데이터: ${notesText}
+    출력 형식: [[ID,ID], [ID,ID,ID]]`;
+
+    console.log(prompt)
 
     callGPT(prompt, function(response) {
+        console.log(response)
         try {
-            const duplicateIndexes = response.match(/\d+/g).map(Number);
-            duplicateIndexes.forEach(index => {
-                $(`.note:eq(${index - 1})`).css('background-color', '#DEDEDE');
+            // GPT 응답에서 그룹화된 배열을 파싱
+            const groupedIndexes = JSON.parse(response);
+
+            // 각 그룹의 첫 번째 노트를 제외한 나머지 노트를 회색으로 표시
+            groupedIndexes.forEach(group => {
+                group.slice(1).forEach(index => {
+                    $(`.note:eq(${index - 1})`).css('background-color', '#DEDEDE');
+                });
             });
         } catch (e) {
             console.error("Error parsing GPT response:", e);
@@ -471,9 +405,8 @@ $('#dataCleanup').on('click', function() {
     });
 });
 
-// 인사이트 버튼을 클릭했을 때 각 그룹별로 핵심 이슈를 출력하는 함수
+// AID 기능 4 - 인사이트 생성 -----------------------------------------------------------------------------------------------------------------------
 $('#insight').on('click', function() {
-    showLoadingSpinner();
     $('#groups .group-container').each(function(index, element) {
         const groupName = $(element).find('.group-title').text();
         const notesText = $(element).find('.note').map(function() {
@@ -502,35 +435,10 @@ $('#insight').on('click', function() {
     });
     $('.insight-icon').css('display', 'inline-block');
 });
-
-// 드래그 이동 처리기
-function dragMoveListener(event) {
-    var target = event.target;
-    var x = (parseFloat($(target).attr('data-x')) || 0) + event.dx;
-    var y = (parseFloat($(target).attr('data-y')) || 0) + event.dy;
-
-    $(target).css('transform', 'translate(' + x + 'px, ' + y + 'px)');
-    $(target).attr('data-x', x);
-    $(target).attr('data-y', y);
-
-    // checkDistanceBetweenNotes();
-}
-
-// 그룹핑 버튼을 클릭했을 때 그룹핑을 수행하는 이벤트 핸들러
-$('#group').on('click', function() {
-    if (notes.length >= 5) {
-        showLoadingSpinner(); // 그룹핑 시작 시 로딩 스피너 표시
-        groupNotes();
-    } else {
-        alert("노트를 5개 이상 입력하세요.");
-    }
-});
-
 //인사이트 보이기/숨기기
 $('#groups').on('click', '.insight-icon', function() {
     const $icon = $(this);
     const $container = $icon.closest('.group-container').find('.insight-container');
-
 
     $container.toggleClass('visible');
 
@@ -541,197 +449,47 @@ $('#groups').on('click', '.insight-icon', function() {
     }
 });
 
-// 페이지 로드 시 선택 박스를 초기화하는 함수
-$(document).ready(function() {
-    $selectionBox = $('<div class="selection-box"></div>').appendTo('body');
 
-    $(document).on('mousedown', function(event) {
-        if ($(event.target).is('.note')) {
-            return;
-        }
 
-        isSelecting = true;
-        selectionStartX = event.pageX;
-        selectionStartY = event.pageY;
-
-        $selectionBox.css({
-            left: selectionStartX + 'px',
-            top: selectionStartY + 'px',
-            width: 0,
-            height: 0,
-            display: 'block'
-        });
-    });
-
-    $(document).on('mousemove', function(event) {
-        if (!isSelecting) return;
-
-        const currentX = event.pageX;
-        const currentY = event.pageY;
-
-        const width = Math.abs(currentX - selectionStartX);
-        const height = Math.abs(currentY - selectionStartY);
-
-        $selectionBox.css({
-            width: width + 'px',
-            height: height + 'px',
-            left: Math.min(currentX, selectionStartX) + 'px',
-            top: Math.min(currentY, selectionStartY) + 'px'
-        });
-
-        $('.note').each(function() {
-            const $note = $(this);
-            const noteOffset = $note.offset();
-            const noteWidth = $note.outerWidth();
-            const noteHeight = $note.outerHeight();
-
-            const selectionBoxOffset = $selectionBox.offset();
-            const selectionBoxWidth = $selectionBox.outerWidth();
-            const selectionBoxHeight = $selectionBox.outerHeight();
-
-            if (
-                selectionBoxOffset.left < noteOffset.left + noteWidth &&
-                selectionBoxOffset.left + selectionBoxWidth > noteOffset.left &&
-                selectionBoxOffset.top < noteOffset.top + noteHeight &&
-                selectionBoxOffset.top + selectionBoxHeight > noteOffset.top
-            ) {
-                $note.addClass('selected');
-            } else {
-                $note.removeClass('selected');
-            }
-        });
-    });
-
-    $(document).on('mouseup', function(event) {
-        isSelecting = false;
-        $selectionBox.hide();
-
-        const selectedCount = $('.note.selected').length;
-
-        if (selectedCount > 0) {
-            if (selectedCount === 1) {
-                $('.floatBtn2').css({
-                    display: 'flex',
-                    top: event.pageY - $('.floatBtn2').outerHeight() - 10 + 'px',
-                    left: event.pageX - ($('.floatBtn2').outerWidth() / 2) + 'px'
-                });
-                $('.floatBtn3').hide();
-            } else {
-                $('.floatBtn3').css({
-                    display: 'flex',
-                    top: event.pageY - $('.floatBtn3').outerHeight() - 10 + 'px',
-                    left: event.pageX - ($('.floatBtn3').outerWidth() / 2) + 'px'
-                });
-                $('.floatBtn2').hide();
-            }
-        } else {
-            $('.floatBtn2').hide();
-            $('.floatBtn3').hide();
-        }
-    });
+// 플로팅 버튼 숨기기 --------------------------------------------------------------------------------------------------------------
+$(document).click(function () {
+    $('.floatBtn2').hide(); 
+});
+// 플로팅 버튼 클릭 시에도 숨겨지지 않게 하기
+$('.floatBtn2').click(function (event) {
+    event.stopPropagation();
 });
 
-// colorContainer 토글
+// floatBtn2 이벤트 - 색상 폰트 설정 --------------------------------------------------------------------------------------------------------------
 $('#colortoggle').on('click', function() {
-    var $colorContainer = $('.colorContainer');
-    var $fontSizeDropdown = $('#fontSizeDropdown');
-    var $floatBtn2 = $('.floatBtn2');
-
-    // 다른 드롭다운 닫기
-    $fontSizeDropdown.css('display', 'none');
-
-    // colorContainer의 현재 display 속성 확인 및 토글
-    if ($colorContainer.css('display') === 'none') {
-        $colorContainer.css({
-            display: 'flex',
-            marginTop: $floatBtn2.outerHeight() + 41 +'px', // floatBtn2 바로 아래에 위치
-            marginLeft: '0px' // floatBtn2의 좌측 정렬
-        });
-    } else {
-        // colorContainer 숨기기
-        $colorContainer.css('display', 'none');
-    }
-
-    // floatBtn2는 항상 표시 상태로 유지
-    $floatBtn2.css('display', 'flex');
+    $('#fontSizeDropdown').removeClass('open');
+    $('.colorContainer').toggleClass('open');
 });
-// colorContainer 버튼 클릭 시 노트 색상 변경
-$(document).on('click', '.color-btn', function() {
-    if (selectedNote) {
-        const selectedColor = $(this).css('background-color');
-        const currentColor = selectedNote.css('background-color');
-        const defaultColor = 'yellow'; // 기본 색상 정의 (노란색)
-
-        // 동일한 색상을 두 번 클릭하면 기본 색상으로 복귀
-        if (selectedColor === currentColor) {
-            selectedNote.css('background-color', defaultColor);
-        } else {
-            selectedNote.css('background-color', selectedColor);
-        }
-    }
+$('#fontSize').on('click', function() {
+    $('.colorContainer').removeClass('open');
+    $('#fontSizeDropdown').toggleClass('open');
 });
-// fontWeight 버튼 클릭 시 선택된 노트의 글씨를 굵게 변경
 $('#fontWeight').on('click', function() {
-    if (selectedNote) {
-        if (selectedNote.css('font-weight') === 'bold' || selectedNote.css('font-weight') === '700') {
-            selectedNote.css('font-weight', 'normal');
-        } else {
-            selectedNote.css('font-weight', 'bold');
-        }
-    }
+    selectedNote.toggleClass('bold');
 });
-//폰트 사이즈 조절하기
-document.getElementById('fontSize').addEventListener('click', function() {
-    var dropdown = document.getElementById('fontSizeDropdown');
-    var $colorContainer = $('.colorContainer');
-    var $floatBtn2 = $('.floatBtn2');
-
-    // 다른 드롭다운 닫기
-    $colorContainer.css('display', 'none');
-    
-    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-        if (selectedNote) {
-            var fontSize = window.getComputedStyle(selectedNote[0]).fontSize;
-            document.querySelectorAll('#fontSizeDropdown .FS').forEach(function(item) {
-                item.classList.remove('chosen');
-                if (item.getAttribute('data-size') === fontSize) {
-                    item.classList.add('chosen');
-                }
-            });
-        }
-        dropdown.style.display = 'flex';
-    } else {
-        dropdown.style.display = 'none';
-    }
-    $('.floatBtn2').css('display', 'flex');
-});
-document.querySelectorAll('#fontSizeDropdown .FS').forEach(function(item) {
-    item.addEventListener('click', function() {
-        var newSize = this.getAttribute('data-size');
-        if (selectedNote) {
-            selectedNote.css('font-size', newSize); // jQuery를 사용하여 스타일 변경
-            updateFontSizeButton(); // #fontSize 버튼 텍스트 업데이트
-        }
-        document.getElementById('fontSizeDropdown').style.display = 'none';
-    });
-});
-function updateFontSizeButton() {
-    if (selectedNote) {
-        var fontSize = window.getComputedStyle(selectedNote[0]).fontSize; // DOM 요소 사용
-        document.getElementById('fontSize').innerText = fontSize.replace('px', '');
-    }
-    $('.floatBtn2').css('display', 'flex');
-}
-if (selectedNote) {
-    updateFontSizeButton();
-}
+$('.color-btn').on('click', function() {
+    const selectedColor = $(this).css('background-color');
+    selectedNote.css('background-color', selectedColor);
+})
+$('.FS').on('click', function() {
+    const selectedSize = $(this).data('size');
+    selectedNote.css('font-size', selectedSize);
+    $('.FS').removeClass('chosen');
+    $(this).addClass('chosen');
+})
 
 
+
+//엑셀 관련 기능 --------------------------------------------------------------------------------------------------------------
 //엑셀추가 업로드 버튼 가리기
 document.getElementById('uploadButton').addEventListener('click', function() {
     document.getElementById('fileInput').click();
 });
-
 //엑셀로 추가하기
 document.getElementById('fileInput').addEventListener('change', function(event) {
     const fileInput = document.getElementById('fileInput');
@@ -767,163 +525,113 @@ document.getElementById('fileInput').addEventListener('change', function(event) 
                 };
                 notes.push(note);
                 noteIndex++;
-
                 const $noteElement = $('<div>')
-                    .addClass('note')
-                    .attr('id', 'note-' + `${note.id}`)
-                    .text(note.text)
-                    .attr('contenteditable', 'true')
-                    .click(function(event) {
-                        event.stopPropagation();
-                        selectedNote = $(this);
-                        $('.note').removeClass('selected');
-                        $(this).addClass('selected');
+                .addClass('note')
+                .attr('id', 'note-' + `${note.id}`)
+                .text(note.text)
+                .attr('contenteditable', 'true') // 노트 수정 가능
 
-                        const floatBtn2 = $('.floatBtn2');
-                        floatBtn2.css({
-                            display: 'flex',
-                            top: event.pageY - floatBtn2.outerHeight() - 10 + 'px',
-                            left: event.pageX - (floatBtn2.outerWidth() / 2) + 'px'
-                        });
-                    })
-                    .dblclick(function() {
-                        applySimilarityColors(note);
-                    });
-                $outputDiv.append($noteElement);
-                updateFontSizeButton();
-
+                $('#notes').append($noteElement);
+            
+                // 노트를 화면 전체에 랜덤하게 배치
+                const windowWidth = $(window).width();
+                const windowHeight = $(window).height();
+                const noteWidth = $noteElement.outerWidth();
+                const noteHeight = $noteElement.outerHeight();
+                const headerHeight = 64; // 헤더 높이
+            
+                // 랜덤한 left와 top 값을 계산
+                const randomLeft = Math.random() * (windowWidth - noteWidth);
+                const randomTop = (Math.random() * (windowHeight - noteHeight - headerHeight)) + headerHeight;
+            
+                // 노트 위치 설정
+                $noteElement.css({
+                    left: randomLeft + 'px',
+                    top: randomTop + 'px'
+                });
+            
+                // 드래그 가능하게 설정
                 makeNoteDraggable($noteElement);
             });
         });
     };
     reader.readAsArrayBuffer(file);
 });
-
-// 1차그룹핑 내보내기
-function exportNotesWithoutUpperGroup() {
+//엑셀로 내보내기
+function exportNotes() {
     const dataForExport = [];
 
-    // 데이터가 있는지 먼저 확인
-    if (notes.length === 0) {
-        alert("노트가 없습니다. 내보내기할 노트가 있는지 확인하세요.");
-        return;
-    }
+    // 모든 note 요소 탐색
+    $('.note').each(function () {
+        const $note = $(this);
+        const noteText = $note.text().trim();
 
-    notes.forEach((note, index) => {
-        const insightElement = $(`#groupnote-${note.id}`).closest('.group-container').find('.insight-note').text() || '';
-        const grouptitleElement = $(`#groupnote-${note.id}`).closest('.group-container').find('.group-title').text() || '';
-        const groupTitleSimilarity= $(`#groupnote-${note.id}`)
-        .closest('.group-container')
-        .find('.group-title')
-        .attr('data-similarity') || ''; 
-        
+        const $groupContainer = $note.closest('.group-container');
+        const upperGroup = $groupContainer.siblings('.group-title-top').text().trim() || '';
+        const groupTitle = $groupContainer.find('.group-title').text().trim() || '';
+        const insightElement = $groupContainer.find('.insight-note').text().trim() || '';
+
         dataForExport.push({
-            '1차헤더': grouptitleElement.trim(),
-            'Note': note.text,
-            'Insight': insightElement.trim(),
-            '유사도': groupTitleSimilarity
+            '2차헤더': upperGroup,
+            '1차헤더': groupTitle,
+            'Insight': insightElement,
+            'Note': noteText,
+            '인터뷰 대상자': ''
         });
     });
 
-    // 데이터가 있는지 확인
-    if (dataForExport.length === 0) {
-        alert("내보낼 데이터가 없습니다.");
-        return;
-    }
+    // 데이터 정렬
+    dataForExport.sort((a, b) => a['2차헤더'].localeCompare(b['2차헤더']));
 
-    // 병합 처리에 필요한 로직
+    const worksheet = XLSX.utils.json_to_sheet(dataForExport, { header: ['2차헤더', '1차헤더', 'Insight', 'Note', '인터뷰 대상자'] });
+
+    // 병합 설정
     const merges = [];
     let startRow = 1;
-    for (let i = 0; i < dataForExport.length; i++) {
-        if (i === dataForExport.length - 1 || dataForExport[i]['1차헤더'] !== dataForExport[i + 1]['1차헤더']) {
-            if (i > startRow - 1) {
-                merges.push({
-                    s: { r: startRow, c: 0 },
-                    e: { r: i + 1, c: 0 }
-                });
-                merges.push({
-                    s: { r: startRow, c: 3 },
-                    e: { r: i + 1, c: 3 }
-                });
+
+    // 병합 기준 배열 설정
+    const mergeColumns = ['2차헤더', '1차헤더', 'Insight'];
+    
+    // 병합 반복 실행
+    mergeColumns.forEach((key, col) => {
+        startRow = 1;
+        for (let i = 1; i < dataForExport.length; i++) {
+            if (dataForExport[i][key] !== dataForExport[i - 1][key]) {
+                if (startRow < i) {
+                    merges.push({ s: { r: startRow, c: col }, e: { r: i - 1, c: col } }); // 셀 병합
+                }
+                startRow = i;
             }
-            startRow = i + 2;
         }
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(dataForExport);
-    worksheet['!merges'] = merges;
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Notes");
-
-    XLSX.writeFile(workbook, '한국공학대학교 mix-lab Affinity-service.xlsx');
-}
-
-//2차그룹핑 내보내기
-function exportNotesWithUpperGroup() {
-    const dataForExport = [];
-
-    notes.forEach(note => {
-        const insightElement = $(`#groupnote-${note.id}`).closest('.group-container').find('.insight-note').text() || '';
-        dataForExport.push({
-            '2차헤더': note.upperGroup || '',
-            '1차헤더': note.group || '',
-            'Note': note.text,
-            '인터뷰 대상자': note.interviewee || '',
-            'Insight': insightElement.trim()
-        });
+        merges.push({ s: { r: startRow, c: col }, e: { r: dataForExport.length, c: col } }); // 마지막 병합
     });
 
-    // UpperGroup 이름을 기준으로 데이터 정렬
-    dataForExport.sort((a, b) => {
-        if (a['2차헤더'] < b['2차헤더']) return -1;
-        if (a['2차헤더'] > b['2차헤더']) return 1;
-        return 0;
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(dataForExport);
-
-    const merges = [];
-    let startRow = 1;
-    for (let i = 0; i < dataForExport.length; i++) {
-        if (i === dataForExport.length - 1 || dataForExport[i]['2차헤더'] !== dataForExport[i + 1]['2차헤더']) {
-            if (i > startRow - 1) {
-                merges.push({
-                    s: { r: startRow, c: 0 }, 
-                    e: { r: i + 1, c: 0 } 
-                });
-                merges.push({
-                    s: { r: startRow, c: 4 },
-                    e: { r: i + 1, c: 4 } 
-                });
-            }
-            startRow = i + 2;
-        }
-    }
-
-    // 병합 설정 추가
     worksheet['!merges'] = merges;
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Notes");
 
     // 엑셀 파일 다운로드
-    XLSX.writeFile(workbook, '한국공학대학교 mix-lab Affinity-service.xlsx');
+    XLSX.writeFile(workbook, '한국공학대학교_mix-lab_Affinity-service.xlsx');
 }
-
-//엑셀 내보내기 전환 코드
-let exportFunction = exportNotesWithoutUpperGroup; 
-
 document.getElementById('export-btn').addEventListener('click', function() {
-    exportFunction();
-});
-
-document.getElementById('headerExtraction').addEventListener('click', function() {
-    exportFunction = exportNotesWithUpperGroup;
+    exportNotes();
 });
 
 
 
+
+
+// 드래그 이동 처리기
+function dragMoveListener(event) {
+    var target = event.target;
+    var x = (parseFloat($(target).attr('data-x')) || 0) + event.dx;
+    var y = (parseFloat($(target).attr('data-y')) || 0) + event.dy;
+
+    $(target).css('transform', 'translate(' + x + 'px, ' + y + 'px)');
+    $(target).attr('data-x', x);
+    $(target).attr('data-y', y);
+}
 // 드래그 가능하게 설정하는 함수
 function makeNoteDraggable($noteElement) {
     interact($noteElement[0]).draggable({
@@ -965,6 +673,10 @@ function makeNoteDraggable($noteElement) {
         }
     });
 }
+// 전역으로 사용할 수 있도록 설정
+window.dragMoveListener = dragMoveListener;
+
+
 // F5 및 Ctrl+R 키를 통한 새로고침 막기 + 경고창 표시
 document.addEventListener('keydown', function(event) {
     if ((event.ctrlKey && event.key === 'r') || event.key === 'F5') {
@@ -975,7 +687,6 @@ document.addEventListener('keydown', function(event) {
         }
     }
 });
-
 // 뒤로 가기 또는 새로고침 시 경고창 표시
 window.onbeforeunload = function(event) {
     event.preventDefault();
@@ -983,26 +694,25 @@ window.onbeforeunload = function(event) {
     return "현재 페이지에서 나가시겠습니까?";
 };
 
-//apikey교체
+
+
+//apikey교체 ------------------------------------------------------------------------------------------------------------
 document.getElementById('changeApikey').onclick = function() {
     document.getElementById('apikeyModal').style.display = 'block';
 };
-
 // 모달 닫기
 document.querySelector('.close').onclick = function() {
     document.getElementById('apikeyModal').style.display = 'none';
 };
-
 // 사용자가 모달 바깥을 클릭했을 때 모달 닫기
 window.onclick = function(event) {
     if (event.target == document.getElementById('apikeyModal')) {
         document.getElementById('apikeyModal').style.display = 'none';
     }
 };
-
 // API Key 업데이트 함수
 function updateApiKey() {
-    const newApiKey = document.getElementById('apikey-input').value;
+    const newApiKey = document. querySelector('.apikey-input').value;
     const inputField = document.querySelector('.input-button-modal');
     if (newApiKey) {
         apiKey = newApiKey;
@@ -1015,7 +725,6 @@ function updateApiKey() {
     }
     console.log("Current API Key:", apiKey);
 }
-
 // 페이지가 로드될 때 apiKey 입력창을 무조건 표시
 window.onload = function() {
     document.getElementById('input-apikey').style.display = 'flex';
@@ -1023,9 +732,9 @@ window.onload = function() {
     document.getElementById('introModal').style.display = 'flex';
 };
 
-// 전역으로 사용할 수 있도록 설정
-window.dragMoveListener = dragMoveListener;
 
+
+//시작모달 ------------------------------------------------------------------------------------------------------------
 $(document).ready(function() {
     let currentSlide = 0;
     const totalSlides = 5;
