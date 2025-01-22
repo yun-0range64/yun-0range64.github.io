@@ -14,8 +14,7 @@ let selectedGroup = null;
 let isSelecting = false;
 let selectionStartX, selectionStartY;
 let $selectionBox;
-
-
+ 
 
 // 로딩 스피너 ------------------------------------------------------------------------------------------------------------------------------
 const toggleLoadingSpinner = (show) => {
@@ -80,7 +79,75 @@ $('#notes, #groups').on('click', '.note', function(event) {
         top: event.pageY - floatBtn2.outerHeight() - 10 + 'px',
         left: event.pageX - (floatBtn2.outerWidth() / 2) + 'px'
     });
+
 });
+
+// 노트 마우스다운 이벤트 처리
+$('#notes').on('mousedown', '.note', function(event) {
+    event.stopPropagation(); // 이벤트 전파 중지
+
+    const note = $(this); // 선택된 노트
+    const trashBin = $('#trashBin'); // 휴지통 요소
+
+    // 휴지통 나타내기
+    trashBin.css({
+        opacity: '1', // 휴지통을 보이게 설정
+        zIndex: '1000',
+        position: 'absolute',
+
+
+    });
+
+    let isMouseUpHandled = false; // 마우스업 처리 상태 변수
+
+    // 마우스 이동 이벤트 처리
+    $(document).on('mousemove', function(e) {
+        // 마우스의 현재 위치
+        const mouseX = e.pageX;
+        const mouseY = e.pageY;
+
+        // 휴지통과의 거리 계산
+        const trashBinOffset = trashBin.offset();
+        const trashBinWidth = trashBin.outerWidth();
+        const trashBinHeight = trashBin.outerHeight();
+
+        const trashBinLeft = trashBinOffset.left;
+        const trashBinTop = trashBinOffset.top;
+
+        const distance = Math.sqrt(
+            Math.pow(mouseX - trashBinLeft, 2) + Math.pow(mouseY - trashBinTop, 2)
+        );
+
+        // 콘솔 로그로 거리 확인
+        console.log(`Distance: ${distance}`);
+
+        // 휴지통에 근접하면 노트 삭제 (마우스 업 시)
+        $(document).on('mouseup', function() {
+                if (distance < 50) { 
+                    note.remove(); // 노트 삭제
+                    console.log('노트가 삭제되었습니다.'); // 삭제 확인 로그
+                }
+                trashBin.css({
+                    opacity: '0' // 휴지통 숨기기
+                });
+                $(document).off('mousemove'); 
+                $(document).off('mouseup'); 
+                isMouseUpHandled = true; // 마우스 업 처리 상태 변경
+            
+        });
+    });
+
+    // 마우스업 이벤트 처리 (휴지통 숨기기)
+    $(document).on('mouseup', function() {
+        trashBin.css({
+            opacity: '0' // 휴지통 숨기기
+        });
+        $(document).off('mousemove'); 
+        $(document).off('mouseup'); 
+    });
+});
+
+
 // 노트를 화면에 추가하는 함수 --------------------------------------------------------------------------------------------------------------
 let noteIndex = 0;
 function addNoteToDisplay(note) {
@@ -110,6 +177,7 @@ function addNoteToDisplay(note) {
     // 드래그 가능하게 설정
     makeNoteDraggable($noteElement);
 }
+
 
 
 
@@ -444,8 +512,10 @@ $('#groups').on('click', '.insight-icon', function() {
 
     if ($container.hasClass('visible')) {
         $icon.attr('src', './images/icon/insight_inactive.png');
+        $container.removeClass('inactive');
     } else {
         $icon.attr('src', './images/icon/insight_active.png');
+        $container.addClass('inactive');
     }
 });
 
@@ -625,6 +695,7 @@ document.getElementById('export-btn').addEventListener('click', function() {
 // 드래그 이동 처리기
 function dragMoveListener(event) {
     var target = event.target;
+    
     var x = (parseFloat($(target).attr('data-x')) || 0) + event.dx;
     var y = (parseFloat($(target).attr('data-y')) || 0) + event.dy;
 
@@ -819,3 +890,28 @@ $(document).ready(function() {
     // 페이지 로드 시 초기 슬라이드 업데이트
     updateCarousel();
 });
+
+// 노트와 휴지통 요소 가져오기
+const trashBin = document.getElementById('trashBin');
+notes.forEach(note => {
+    note.addEventListener('dragstart', (e) => {
+      e.target.classList.add('dragging'); // 드래그 시작 시 스타일 변경
+      trashBin.classList.add('visible'); // 드래그 시작 시 휴지통 보이기
+    });
+});  
+
+// //워크스페이스 줌인줌아웃웃
+// const workspace = document.getElementById('workspace');
+//    let scale = 1; // 줌 배율 초기값
+//   let offsetX = 0, offsetY = 0; // 이동을 위한 초기 위치
+
+//   workspace.addEventListener('wheel', (e) => {
+//       e.preventDefault();
+//       if (e.deltaY < 0) {
+//           scale += 0.1;  // 줌인
+//       } else {
+//           scale -= 0.1;  // 줌아웃
+//       }
+//       scale = Math.min(Math.max(scale, 0.5), 3);  // 최대 3배, 최소 0.5배
+//       workspace.style.transform = `scale(${scale})`;
+//   });
