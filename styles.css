@@ -12,6 +12,11 @@ body {
     background-color: #F2F2F2;
     color: #333;
     user-select: none;
+    width: 100vw;
+    height: 100vh;
+    /* user-select: none; */
+    position: relative;
+overflow: hidden;
 }
 body button{
     cursor: pointer;
@@ -53,6 +58,7 @@ Header {
     background-color: #F2F2F2;
     padding: 32px;
     z-index: 1000;
+    /* position: fixed; */
 }
 .header-btn{
     display: flex;
@@ -88,6 +94,10 @@ Header {
     justify-content: center;
     padding: 12px 24px;
     border-radius: 999px;
+}
+#changeApikey:hover{
+
+    
 }
 /* 사이드바 --------------------------------------------------------------------------------- */
 sidebar {
@@ -193,6 +203,7 @@ sidebar:hover button span{
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
+    
 }
 /* 플로팅 버튼 1: 노트 입력 --------------- */
 #noteInput {
@@ -200,7 +211,7 @@ sidebar:hover button span{
     flex: 1 0 0;
     height: 48px;
     padding: 16px 24px;
-    border: 1px solid #000000;
+    border: 1px solid #aaa;
     border-radius: 500px;
     background: #F2F2F2;
     backdrop-filter: blur(2px);
@@ -216,7 +227,7 @@ sidebar:hover button span{
     height: 60px;
     border: 0;
     border-radius: 500px;
-    background-color: #3E3E3E;
+    background-color:#a5a5a5;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -227,7 +238,7 @@ sidebar:hover button span{
 #noteAdd {
     width: 48px;
     height: 48px;
-    border: 1.5px solid #3E3E3E;
+    border: 2px solid #777;
     border-radius: 500px;
     background-color: transparent;
     display: flex;
@@ -237,8 +248,15 @@ sidebar:hover button span{
     position: relative;
     transition: all 0.3s ease-in-out;
 }
+
+#noteAdd:hover path{
+    fill: var(--pr);
+    transition: opacity 0.3s ease-in-out;
+}
+
+
 #noteAdd:hover {
-    border:  1.5px solid var(--pr);
+    border:  2px solid var(--pr);
     background-color: var(--se);
 }
 #noteAdd::after {
@@ -264,7 +282,7 @@ sidebar:hover button span{
 #fileInput{
     display: none;
 }
-
+changeApike
 #uploadButton {
     width: 48px;
     height: 48px;
@@ -487,6 +505,10 @@ sidebar:hover button span{
     justify-content: center;
     gap: 8px;
 }
+.note.dragging {
+    opacity: 0.5;
+  }
+  
 .notes .note {
     position: relative;
 }
@@ -514,6 +536,21 @@ sidebar:hover button span{
     font-weight: 800;
     margin: 0;
 }
+
+/* Pulsate 애니메이션 */
+@keyframes pulsate {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+
 .insight-container.visible {
     display: none;
 }
@@ -523,7 +560,13 @@ sidebar:hover button span{
     right: -20px;
     z-index: 100;
     display: none;
+    animation: pulsate 1s ease-in-out infinite; /* Pulsate 애니메이션 */
 }
+
+.insight-icon.inactive {
+    animation: none;
+}
+
 .insight {
     background-color: #ADD8E6;
     padding: 10px;
@@ -682,46 +725,114 @@ sidebar:hover button span{
 #input-apikey {
     width: 100vw;
     height: 100vh;
-    background-color: rgba(53, 53, 53, 0.692);
+    background-color: rgba(53, 53, 53, 0.7);
     z-index:999;
     position: absolute;
     display: flex; /* 페이지가 로드될 때 무조건 표시 */
     justify-content: center;
     align-items: center;
 }
+
 /* 처음 apikey 받는 창 */
 .start-input-apikey {
     max-width: 400px;
     width: 80%;
-    padding: 20px 28px;
+    padding: 40px 28px;
     background-color: #FEFEFE;
     border-radius: 12px;
+    position: fixed;
 }
-.start-input-apikey input{
+.start-input-apikey input, #apikeyModal input{
     box-sizing: border-box;
     height: 40px;
-    max-width: 260px;
     width: 80%;
     padding: 16px 24px;
-    border: 1px solid #000000;
+    border: 1.5px solid #ccc;
     border-radius: 12px;
-    margin-right: 12px;
-    margin-top: 24px;;
-}
-.start-input-apikey button{
-    box-sizing: border-box;
-    width: 20%;
-    max-width: 60px;
-    font-size: 18px;
-    font-weight: light;
-    line-height: 40px;
-    color: #FFFFFF;
-    border: 0;
-    border-radius: 50px;
-    background-color: #3E3E3E;
+
+    margin: 0 auto;
+    display: block;
 }
 
-/* 초기 설명 모달 --------------------------------------------------------------------------------- */
+.start-input-apikey h2{
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.start-input-apikey .p-large, #apikeyModal .p-large{
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 160%;
+    text-align: center;
+    color: #434343;
+    margin-top: 16px;
+    margin-bottom: 40px;
+}
+
+
+.start-input-apikey .p-small{
+    font-size: 12px;
+    text-align: center;
+    color: #646464;
+    margin-top: 40px;
+}
+.start-input-apikey button, #apikeyModal button{
+    box-sizing: border-box;
+    width: 80%;
+    margin: 0 auto;
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 40px;
+    color: #FFF;
+    border: 0;
+    border-radius: 12px;
+    background-color: #3E8BFF;
+    margin-top: 28px;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.25);
+}
+
+.start-input-apikey button:hover,  #apikeyModal button:hover{
+    color: #FFFFFF;
+    background-color: #3278e1;
+    transition: ease-in-out 0.3S;
+
+    
+}noteInpu
+
+.start-input-apikey button:active, #apikeyModal button:active{
+    color: #FFFFFF;
+    background-color: #3278e1;
+    transition: ease-in-out 0.3S;
+    animation: shadow-drop-center 0.2s ease-in-out both;
+}
+
+
+@keyframes shadow-drop-center {
+    0% {
+        box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+}
+
+/* API 교체 모달 */
+
+#apikeyModal h2{
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    margin-top:40px;
+}
+
+#apikeyModal button{
+    margin-bottom: 28px;
+ 
+}
+
+/* 초기 설명 모달 -------------------------------------------------------------------------------- */
 .intro-modal {
     display: flex;
     flex-direction: row;
@@ -822,3 +933,70 @@ button#prev-btn:disabled {
 #cancel{
     cursor: pointer;
 }
+
+/* 휴지통 --------------------------------------------------------------------------------- */
+.trash-bin {
+    width: 100px;
+    height: 100px;
+    background-color: #ddd;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 1000px;
+    cursor: pointer;
+    box-shadow: 100 rgba(0, 0, 0, 0.5);
+    font-size: 40px;
+    transition: background-color 0.3s ease;
+    opacity: 0;
+    z-index: 1000;
+    bottom: 28px;
+    right: 28px;
+  }
+
+  @keyframes jello-horizontal {
+     0% {
+        transform: translateX(0) translateY(0);
+    }
+    15% {
+        transform: translateX(-15px) translateY(10px);
+    }
+    30% {
+        transform: translateX(15px) translateY(-5px);
+    }
+    45% {
+        transform: translateX(-10px) translateY(3px);
+    }
+    60% {
+        transform: translateX(10px) translateY(-2px);
+    }
+    75% {
+        transform: translateX(-5px) translateY(1px);
+    }
+    100% {
+        transform: translateX(0) translateY(0);
+    }
+}
+
+.trash-bin:hover {
+    animation: jello-horizontal 0.6s ease-in-out;
+    background-color: #D6E6FF;
+  }
+  
+  .trash-bin:hover .trash-ic path {
+    fill: #3E8BFF !important;
+  }
+  
+
+  /*워크스페이스 줌인줌아웃
+  #workspace {
+    width:100vw;
+    height: 100vh;
+    position: absolute;
+    cursor: grab;
+    left: 0;
+    top: 0;
+    background-color: rgba(255, 27, 27, 0.5);
+    transition: transform 0.1s ease-in-out; 
+}
+    */
