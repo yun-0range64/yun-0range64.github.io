@@ -95,10 +95,7 @@ Header {
     padding: 12px 24px;
     border-radius: 999px;
 }
-#changeApikey:hover{
 
-    
-}
 /* 사이드바 --------------------------------------------------------------------------------- */
 sidebar {
     display: flex;
@@ -282,7 +279,7 @@ sidebar:hover button span{
 #fileInput{
     display: none;
 }
-changeApike
+
 #uploadButton {
     width: 48px;
     height: 48px;
@@ -799,7 +796,7 @@ changeApike
     transition: ease-in-out 0.3S;
 
     
-}noteInpu
+}
 
 .start-input-apikey button:active, #apikeyModal button:active{
     color: #FFFFFF;
