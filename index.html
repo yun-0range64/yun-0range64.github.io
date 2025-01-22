@@ -45,9 +45,13 @@
   
     <div id="input-apikey">
         <div class="start-input-apikey">
-            <label for="apikey-input"><h2>API Key를 입력하세요</h2></label>
-            <input type="text" class="apikey-input" placeholder="API Key 입력" />
-            <button onclick="updateApiKey()">설정</button>
+            <label for="apikey-input"><h2>API Key를 입력하세요.</h2></label>
+            <p class="p-large">Open API KEY를 발급해서 입력하면<br />모든 기능을 사용할 수 있습니다.</p>
+            <input type="text" class="apikey-input" placeholder="Enter your API Key..." />
+            <button onclick="updateApiKey()">시작하기👋</button>
+            <p class="p-small">API KEY가 없으신가요? &nbsp; <a href="https://openai.com/index/openai-api/" target="_blank">여기서 발급받기</a></p>
+            
+
         </div>
     </div>
     
@@ -59,11 +63,11 @@
             <div class="modal-content">
                 <span class="close">&times;</span>
                 <h2>API Key 변경</h2>
-                <label for="apikey-input">새로운 API Key를 입력하세요:</label>
-                <div class="apikey-input-flex">
+                <p class="p-large">새로운 API Key를 입력하세요.</p>
+                
                     <input class="input-button-modal apikey-input" type="text" placeholder="API Key 입력" />
-                    <button onclick="updateApiKey()">설정</button>
-                </div>
+                    <button onclick="updateApiKey()">변경</button>
+             
             </div>
         </div>
         <div class="header-btn">
@@ -91,12 +95,15 @@
             <span class="sidebar-label">2차헤더</span>
         </button>
     </Sidebar>
-
+    
     <div class="floatBtn">
         <textarea id="noteInput" placeholder="내용을 입력하세요."></textarea>       
         <input type="file" id="fileInput" accept=".xlsx, .xls"/>
         <button class="input-button" id="uploadButton"><img src="./images/Icon/fileinput.png" alt="" width="32px"></button>
-        <button class="input-button" id="noteAdd"><img src="./images/Icon/textinput.png" alt="" width="32px"></button>
+        <button class="input-button" id="noteAdd">
+            <svg class="sendAllow"             xmlns="http://www.w3.org/2000/svg" width="22" height="24" viewBox="0 0 22 24" fill="none">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M9.7522 3.50351V22.5109C9.7522 23.0632 10.1999 23.5109 10.7522 23.5109C11.3045 23.5109 11.7522 23.0632 11.7522 22.5109V3.50331L19.6898 11.4409C20.0803 11.8314 20.7135 11.8314 21.104 11.4409C21.4945 11.0504 21.4945 10.4172 21.104 10.0267L12.1665 1.08919C12.0216 0.944235 11.8599 0.826182 11.6877 0.735031C11.5447 0.357509 11.1798 0.0891113 10.7522 0.0891113C10.3245 0.0891113 9.95957 0.357572 9.81664 0.735165C9.64455 0.826297 9.48297 0.944304 9.33809 1.08919L0.382249 10.045C-0.0082756 10.4356 -0.0082756 11.0687 0.382249 11.4592C0.772773 11.8498 1.40594 11.8498 1.79646 11.4592L9.7522 3.50351Z" fill="#646464"/>
+          </svg>
     </div>
     
     <div class="floatBtn2">
@@ -112,6 +119,7 @@
             </div>
         
             <button id="fontSize">14</button>
+
             <div id="fontSizeDropdown" class="dropdown">
                 <div class="FS f1" data-size="10px">10</div>
                 <div class="FS f2" data-size="12px">12</div>
@@ -126,13 +134,21 @@
     
     <button id="similarityBtn2">유사도 확인</button>    
 
-    <div id="notes"></div>
+    <div id="notes" ></div>
     <div id="groups"></div>
     
     <div class="loading-container">
         <div class="spinner"></div>
     </div>
+
     
+    <div class="trash-bin" id="trashBin">
+        <svg class="trash-ic" xmlns="http://www.w3.org/2000/svg" width="48" height="50" viewBox="0 0 18 20" fill="none">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M5.58579 0.585786C5.96086 0.210714 6.46957 0 7 0H11C11.5304 0 12.0391 0.210714 12.4142 0.585786C12.7893 0.960859 13 1.46957 13 2V4H15.9883C15.9953 3.99993 16.0024 3.99993 16.0095 4H17C17.5523 4 18 4.44772 18 5C18 5.55228 17.5523 6 17 6H16.9201L15.9997 17.0458C15.9878 17.8249 15.6731 18.5695 15.1213 19.1213C14.5587 19.6839 13.7957 20 13 20H5C4.20435 20 3.44129 19.6839 2.87868 19.1213C2.32687 18.5695 2.01223 17.8249 2.00035 17.0458L1.07987 6H1C0.447715 6 0 5.55228 0 5C0 4.44772 0.447715 4 1 4H1.99054C1.9976 3.99993 2.00466 3.99993 2.0117 4H5V2C5 1.46957 5.21071 0.960859 5.58579 0.585786ZM3.0868 6L3.99655 16.917C3.99885 16.9446 4 16.9723 4 17C4 17.2652 4.10536 17.5196 4.29289 17.7071C4.48043 17.8946 4.73478 18 5 18H13C13.2652 18 13.5196 17.8946 13.7071 17.7071C13.8946 17.5196 14 17.2652 14 17C14 16.9723 14.0012 16.9446 14.0035 16.917L14.9132 6H3.0868ZM11 4H7V2H11V4ZM7 8C7.55228 8 8 8.44772 8 9V15C8 15.5523 7.55228 16 7 16C6.44772 16 6 15.5523 6 15V9C6 8.44772 6.44772 8 7 8ZM11 8C11.5523 8 12 8.44772 12 9V15C12 15.5523 11.5523 16 11 16C10.4477 16 10 15.5523 10 15V9C10 8.44772 10.4477 8 11 8Z" fill="#9F9F9F"/>
+          </svg>
+      </div>
+      
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
